@@ -6,6 +6,10 @@ Create virtual environment.
 ```sh
 python -m venv .venv
 ```
+Activate virtual environment.
+```sh
+. .venv/bin/activate
+```
 Install dependencies.
 ```sh
 pip install -r requirements.txt

@@ -11,7 +11,7 @@ def main():
             values = value_handlers.setdefault(name, dict())
             values.setdefault(value, None)
 
-    pprint(value_handlers)
+    pprint(list(value_handlers.items()))
 
 
 if __name__ == "__main__":

@@ -10,3 +10,7 @@ Install dependencies.
 ```sh
 pip install -r requirements.txt
 ```
+Update dependency list if you install or remove dependencies.
+```sh
+pip freeze > requirements.txt
+```

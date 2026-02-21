@@ -1,6 +1,5 @@
 import csv
 from collections import namedtuple
-from typing import Iterator
 
 def main():
     with open("params-output.csv") as tests_file:

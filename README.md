@@ -1,5 +1,6 @@
 # Exploration of Testing Through Input Space Partitioning
 
+## Setup
 **Linux only**
 
 Create virtual environment.
@@ -18,3 +19,10 @@ Update dependency list if you install or remove dependencies.
 ```sh
 pip freeze > requirements.txt
 ```
+
+## Run
+Run tests
+```sh
+pytest
+```
+Use option `-s` if you want to see stdout.

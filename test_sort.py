@@ -45,10 +45,7 @@ def test_eval(test_case):
             has_random_source and context.random_source.meta == File.Meta.READ_PROTECTED
         )
         random_source_file_empty = (
-            has_random_source
-            and context.random_source_empty
-            and not random_source_file_no_exist
-            and not random_source_file_read_protected
+            has_random_source and context.random_source_content == ""
         )
         random_source_error = (
             random_source_file_no_exist
@@ -74,7 +71,11 @@ def test_eval(test_case):
             "random_source.txt" in stderr
             and "end of file" in stderr
             and result.returncode != 0
-        ) == random_source_file_empty
+        ) == (
+            random_source_file_empty
+            and not random_source_file_no_exist
+            and not random_source_file_read_protected
+        )
 
         non_existent_file = context.find_file_with_meta(File.Meta.NON_EXISTENT)
         assert (

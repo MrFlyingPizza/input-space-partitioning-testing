@@ -44,7 +44,7 @@ class Context:
     encoding: str = field(init=False, default="utf-8")
     args: list[str] = field(init=False, default_factory=list)
     random_source: File = field(init=False, default=None)
-    random_source_empty: bool = field(init=False, default=False)
+    random_source_content: str = field(init=False, default="")
 
     ascii_upper = string.ascii_uppercase
     ascii_lower = string.ascii_lowercase
@@ -97,8 +97,7 @@ class Context:
 
         if self.random_source and self.random_source.meta != File.Meta.NON_EXISTENT:
             with open(self.random_source.name, "w", encoding=self.encoding) as f:
-                if not self.random_source_empty:
-                    f.write("".join(random.choices(self.ascii_alphanum, k=10)))
+                f.write(self.random_source_content)
 
             match self.random_source.meta:
                 case File.Meta.READ_PROTECTED:
@@ -230,24 +229,11 @@ class Context:
     def add_arg(self, arg: str, /):
         self.args.append(arg)
 
-    def add_random_source_file(self):
-        self.random_source = File("random_source.txt")
+    def add_random_source_file(self, meta=File.Meta.READABLE, *, content: str = ""):
+        self.random_source = File("random_source.txt", meta)
         self.add_arg("--random-source")
         self.add_arg(self.random_source.name)
-
-    def add_empty_random_source_file(self):
-        self.add_random_source_file()
-        self.random_source_empty = True
-
-    def add_non_existent_source_file(self, /):
-        self.add_random_source_file()
-        self.random_source_empty = True
-        self.random_source.meta = File.Meta.NON_EXISTENT
-
-    def add_read_protected_source_file(self, /):
-        self.add_random_source_file()
-        self.random_source_empty = True
-        self.random_source.meta = File.Meta.NON_EXISTENT
+        self.random_source_content = content
 
 
 _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]]] = [
@@ -405,11 +391,17 @@ _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]
     (
         "random_source",
         {
-            "empty_file": Context.add_empty_random_source_file,
-            "non_empty_file": Context.add_random_source_file,
-            "non_existent_file": Context.add_non_existent_source_file,
+            "empty_file": Context.add_random_source_file,
+            "non_empty_file": lambda context: context.add_random_source_file(
+                content="Alkdjfelkjefalkjfelakwhfjkl"
+            ),
+            "non_existent_file": lambda context: context.add_random_source_file(
+                File.Meta.NON_EXISTENT
+            ),
             "none": None,
-            "read_protected_file": Context.add_read_protected_source_file,
+            "read_protected_file": lambda context: context.add_random_source_file(
+                File.Meta.READ_PROTECTED
+            ),
         },
     ),
 ]

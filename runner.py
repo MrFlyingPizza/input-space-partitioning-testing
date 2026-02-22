@@ -109,8 +109,8 @@ class Context:
     def __exit__(self, exc_type, exc, tb):
         pass
 
-    def has_file_with_meta(self, meta: File.Meta):
-        return any(filter(lambda f: f.meta == meta, self.input_files))
+    def find_file_with_meta(self, meta: File.Meta):
+        return next(filter(lambda f: f.meta == meta, self.input_files), None)
 
     def get_all_inputs(self):
         return ([self.stdin_file] if self.stdin_file else []) + self.input_files
@@ -147,6 +147,8 @@ class Context:
         self.input_lines = [""] * len(self.input_lines)
 
     def set_random_input_lines_empty(self, amount_per_input: int = 2):
+        if not self.input_lines:
+            return
         indices = random.sample(
             range(len(self.input_lines)),
             k=min(amount_per_input * self.get_input_count(), len(self.input_lines)),
@@ -229,7 +231,7 @@ class Context:
         self.args.append(arg)
 
     def add_random_source_file(self):
-        self.random_source = File("stdin.txt")
+        self.random_source = File("random_source.txt")
         self.add_arg("--random-source")
         self.add_arg(self.random_source.name)
 

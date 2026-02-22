@@ -6,7 +6,6 @@ import string
 import random
 import csv
 import os
-import stat
 from typing import NamedTuple, Callable
 from enum import Enum
 from dataclasses import InitVar, dataclass, field
@@ -42,12 +41,16 @@ class Context:
     input_files: list[File] = field(init=False, default_factory=list)
     input_lines: list[str] = field(init=False, default_factory=list)
     max_line_length: int = field(init=False, default=10)
+    encoding: str = field(init=False, default="utf-8")
+    args: list[str] = field(init=False, default_factory=list)
+    random_source: File = field(init=False, default=None)
+    random_source_empty: bool = field(init=False, default=False)
 
     ascii_upper = string.ascii_uppercase
     ascii_lower = string.ascii_lowercase
     ascii_letters = string.ascii_letters
     ascii_alphanum = string.ascii_letters + string.digits
-    ascii_all = "".join(chr(i) for i in range(256))
+    ascii_all = string.printable
     months = [
         "January",
         "February",
@@ -62,9 +65,6 @@ class Context:
         "November",
         "December",
     ]
-    numerics = ["1234", "10e3", "1.233"]
-    human_numerics = ["100Kg", "200Kg"]
-    version_numbers = ["v1.0.0", "v1.0.1"]
 
     def __post_init__(self, test_case: TestCase):
         values = test_case.to_dict()
@@ -81,7 +81,7 @@ class Context:
         if existing_inputs:
             batch_size = len(self.input_lines) // len(existing_inputs)
             for i, file in enumerate(existing_inputs):
-                with open(file.name, "w") as f:
+                with open(file.name, "w", encoding=self.encoding) as f:
                     f.writelines(
                         self.input_lines[
                             i
@@ -94,6 +94,15 @@ class Context:
                 match file.meta:
                     case File.Meta.READ_PROTECTED:
                         os.chmod(file.name, 0)
+
+        if self.random_source and self.random_source.meta != File.Meta.NON_EXISTENT:
+            with open(self.random_source.name, "w", encoding=self.encoding) as f:
+                if not self.random_source_empty:
+                    f.write("".join(random.choices(self.ascii_alphanum, k=10)))
+
+            match self.random_source.meta:
+                case File.Meta.READ_PROTECTED:
+                    os.chmod(self.random_source.name, 0)
 
         return self
 
@@ -119,7 +128,7 @@ class Context:
         self.input_files.append(File(f"{len(self.input_files)}.txt"))
 
     def add_multiple_files(self, amount: int = 3, /):
-        for i in range(amount):
+        for _ in range(amount):
             self.add_one_file()
 
     def set_random_file_meta(self, meta: File.Meta, /):
@@ -148,10 +157,16 @@ class Context:
     def set_input_line_length(self, length: int, /):
         self.max_line_length = length
 
+    def fill_input_lines_using_function(self, func: Callable[[int, str], None]):
+        for i, line in enumerate(self.input_lines):
+            self.input_lines[i] = func(i, line)
+
     def fill_input_lines_using_charset(self, charset: str, /):
-        for i in range(len(self.input_lines)):
-            length = random.randint(1, self.max_line_length)
-            self.input_lines[i] = "".join(random.choices(charset, k=length))
+        self.fill_input_lines_using_function(
+            lambda *_: "".join(
+                random.choices(charset, k=random.randint(1, self.max_line_length))
+            )
+        )
 
     def fill_input_lines_with_random_uppercase_letters(self):
         self.fill_input_lines_using_charset(self.ascii_upper)
@@ -169,20 +184,68 @@ class Context:
         self.fill_input_lines_using_charset(self.ascii_all)
 
     def fill_input_lines_with_random_elements(self, elements: list[str]):
-        for i in range(len(self.input_lines)):
-            self.input_lines[i] = random.choice(elements)
+        self.fill_input_lines_using_function(lambda *_: random.choice(elements))
 
     def fill_input_lines_with_random_months(self):
         self.fill_input_lines_with_random_elements(self.months)
 
     def fill_input_lines_with_random_numerics(self):
-        self.fill_input_lines_with_random_elements(self.numerics)
+        formats = ["{:.5f}", "{:.5e}", "{:+.5f}", "{:+.5e}"]
+        self.fill_input_lines_using_function(
+            lambda *_: random.choice(
+                [
+                    lambda: random.choice(formats).format(random.uniform(-1e10, 1e10)),
+                    lambda: str(random.randint(-1000, 1000)),
+                ]
+            )()
+        )
 
     def fill_input_lines_with_random_human_numerics(self):
-        self.fill_input_lines_with_random_elements(self.human_numerics)
+        suffixes = ["", "K", "M", "G", "T", "P", "E", "Z", "Y"]
+        self.fill_input_lines_using_function(lambda *_: f"{random.choice([
+                lambda: str(random.randint(-1000, 1000)),
+                lambda: f"{random.uniform(-1000, 1000):.3f}",
+            ])()}{random.choice(suffixes)}")
 
     def fill_input_lines_with_random_version_numbers(self):
-        self.fill_input_lines_with_random_elements(self.version_numbers)
+        self.fill_input_lines_using_function(
+            lambda *_: ".".join(str(random.randint(0, 100)) for i in range(3))
+        )
+
+    def add_leading_blanks_to_all_lines(self):
+        blank = "          "
+        self.fill_input_lines_using_function(lambda _, line: blank + line)
+
+    def add_leading_blanks_to_some_random_lines(self):
+        blank = "          "
+        self.fill_input_lines_using_function(
+            lambda _, line: blank + line if random.random() < 0.5 else line
+        )
+
+    def set_file_encoding(self, encoding: str, /):
+        self.encoding = encoding
+
+    def add_arg(self, arg: str, /):
+        self.args.append(arg)
+
+    def add_random_source_file(self):
+        self.random_source = File("stdin.txt")
+        self.add_arg("--random-source")
+        self.add_arg(self.random_source.name)
+
+    def add_empty_random_source_file(self):
+        self.add_random_source_file()
+        self.random_source_empty = True
+
+    def add_non_existent_source_file(self, /):
+        self.add_random_source_file()
+        self.random_source_empty = True
+        self.random_source.meta = File.Meta.NON_EXISTENT
+
+    def add_read_protected_source_file(self, /):
+        self.add_random_source_file()
+        self.random_source_empty = True
+        self.random_source.meta = File.Meta.NON_EXISTENT
 
 
 _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]]] = [
@@ -241,7 +304,7 @@ _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]
             "mixed": Context.fill_input_lines_with_random_mixedcase_letters,
             "months": Context.fill_input_lines_with_random_months,
             "not_applicable": None,
-            "numeric_only": Context.fill_input_lines_with_random_numerics,
+            "numeric": Context.fill_input_lines_with_random_numerics,
             "upper": Context.fill_input_lines_with_random_uppercase_letters,
             "version_numbers": Context.fill_input_lines_with_random_version_numbers,
         },
@@ -258,15 +321,20 @@ _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]
     (
         "input_content_blanks",
         {
-            "all_leading": None,
+            "all_leading": Context.add_leading_blanks_to_all_lines,
             "no_blanks": None,
             "not_applicable": None,
-            "some_leading": None,
+            "some_leading": Context.add_leading_blanks_to_some_random_lines,
         },
     ),
     (
         "input_character_encoding",
-        {"ascii": None, "not_applicable": None, "utf16": None, "utf8": None},
+        {
+            "ascii": lambda context: context.set_file_encoding("ascii"),
+            "not_applicable": None,
+            "utf16": lambda context: context.set_file_encoding("utf-16"),
+            "utf8": lambda context: context.set_file_encoding("utf-8"),
+        },
     ),
     (
         "input_content_sorting",
@@ -277,34 +345,69 @@ _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]
             "unsorted": None,
         },
     ),
-    ("ignore_leading_blanks", {"false": None, "not_applicable": None, "true": None}),
-    ("dictionary_order", {"false": None, "not_applicable": None, "true": None}),
-    ("ignore_case", {"false": None, "not_applicable": None, "true": None}),
+    (
+        "ignore_leading_blanks",
+        {
+            "false": None,
+            "not_applicable": None,
+            "true": lambda context: context.add_arg("--ignore-leading-blanks"),
+        },
+    ),
+    (
+        "dictionary_order",
+        {
+            "false": None,
+            "not_applicable": None,
+            "true": lambda context: context.add_arg("--dictionary-order"),
+        },
+    ),
+    (
+        "ignore_case",
+        {
+            "false": None,
+            "not_applicable": None,
+            "true": lambda context: context.add_arg("--ignore-case"),
+        },
+    ),
     (
         "ignore_non_printable_characters",
-        {"false": None, "not_applicable": None, "true": None},
+        {
+            "false": None,
+            "not_applicable": None,
+            "true": lambda context: context.add_arg("--ignore-nonprinting"),
+        },
     ),
     (
         "sort_type",
         {
-            "human_numeric": None,
+            "human_numeric": lambda context: context.add_arg("--human-numeric-sort"),
             "lexigraphical": None,
-            "month": None,
+            "month": lambda context: context.add_arg("--month-sort"),
             "not_applicable": None,
-            "numeric": None,
-            "random": None,
-            "version": None,
+            "numeric": lambda context: context.add_arg("--numeric-sort"),
+            "general_numeric": lambda context: context.add_arg(
+                "--general-numeric-sort"
+            ),
+            "random": lambda context: context.add_arg("--random-sort"),
+            "version": lambda context: context.add_arg("--version-sort"),
         },
     ),
-    ("sort_reverse", {"false": None, "not_applicable": None, "true": None}),
+    (
+        "sort_reverse",
+        {
+            "false": None,
+            "not_applicable": None,
+            "true": lambda context: context.add_arg("--reverse"),
+        },
+    ),
     (
         "random_source",
         {
-            "empty_file": None,
-            "non_empty_file": None,
-            "non_existent_file": None,
+            "empty_file": Context.add_empty_random_source_file,
+            "non_empty_file": Context.add_random_source_file,
+            "non_existent_file": Context.add_non_existent_source_file,
             "none": None,
-            "read_protected_file": None,
+            "read_protected_file": Context.add_read_protected_source_file,
         },
     ),
 ]

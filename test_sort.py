@@ -10,6 +10,8 @@ def test_eval(test_case):
     with TemporaryDirectory() as temp_dir, contextlib.chdir(temp_dir), runner.Context(
         test_case
     ) as context:
-        subprocess.run(["sort", *context.get_filenames()])
+        args = context.args + context.get_filenames()
+        result = subprocess.run(["sort", *args], capture_output=True)
+        print(result.stderr)
 
     assert True

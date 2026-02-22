@@ -109,6 +109,9 @@ class Context:
     def __exit__(self, exc_type, exc, tb):
         pass
 
+    def has_file_with_meta(self, meta: File.Meta):
+        return any(filter(lambda f: f.meta == meta, self.input_files))
+
     def get_all_inputs(self):
         return ([self.stdin_file] if self.stdin_file else []) + self.input_files
 

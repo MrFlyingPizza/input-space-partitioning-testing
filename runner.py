@@ -140,11 +140,8 @@ class Context:
     def add_standard_input_file(self):
         self.stdin_file = File("stdin.txt")
 
-    def add_one_line(self):
-        self.input_lines.append(None)
-
-    def add_multiple_lines(self, amount_per_input: int = 10, /):
-        self.input_lines += [None] * (self.get_input_count() * amount_per_input)
+    def add_lines_per_input(self, lines_per_input: int = 1):
+        self.input_lines += [None] * (self.get_input_count() * 1)
 
     def set_all_input_lines_empty(self):
         self.input_lines = [""] * len(self.input_lines)
@@ -284,9 +281,9 @@ _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]
         "input_lines",
         {
             "empty": None,
-            "multiple_lines": Context.add_multiple_lines,
+            "multiple_lines": lambda context: context.add_lines_per_input(20),
             "not_applicable": None,
-            "one_line": Context.add_one_line,
+            "one_line": lambda context: context.add_lines_per_input(1),
         },
     ),
     (

@@ -47,7 +47,24 @@ class Context:
     ascii_lower = string.ascii_lowercase
     ascii_letters = string.ascii_letters
     ascii_alphanum = string.ascii_letters + string.digits
-    ascii_all = string.printable
+    ascii_all = "".join(chr(i) for i in range(256))
+    months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ]
+    numerics = ["1234", "10e3", "1.233"]
+    human_numerics = ["100Kg", "200Kg"]
+    version_numbers = ["v1.0.0", "v1.0.1"]
 
     def __post_init__(self, test_case: TestCase):
         values = test_case.to_dict()
@@ -151,6 +168,22 @@ class Context:
     def fill_input_lines_with_random_ascii(self):
         self.fill_input_lines_using_charset(self.ascii_all)
 
+    def fill_input_lines_with_random_elements(self, elements: list[str]):
+        for i in range(len(self.input_lines)):
+            self.input_lines[i] = random.choice(elements)
+
+    def fill_input_lines_with_random_months(self):
+        self.fill_input_lines_with_random_elements(self.months)
+
+    def fill_input_lines_with_random_numerics(self):
+        self.fill_input_lines_with_random_elements(self.numerics)
+
+    def fill_input_lines_with_random_human_numerics(self):
+        self.fill_input_lines_with_random_elements(self.human_numerics)
+
+    def fill_input_lines_with_random_version_numbers(self):
+        self.fill_input_lines_with_random_elements(self.version_numbers)
+
 
 _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]]] = [
     (
@@ -203,14 +236,14 @@ _context_creation_pipeline: list[tuple[str, dict[str, Callable[[Context], None]]
         {
             "alphanum": Context.fill_input_lines_with_random_alphanum,
             "any": Context.fill_input_lines_with_random_ascii,
-            "human_readable_numbers": None,
+            "human_readable_numbers": Context.fill_input_lines_with_random_human_numerics,
             "lower": Context.fill_input_lines_with_random_lowercase_letters,
             "mixed": Context.fill_input_lines_with_random_mixedcase_letters,
-            "months": None,
+            "months": Context.fill_input_lines_with_random_months,
             "not_applicable": None,
-            "numeric_only": None,
+            "numeric_only": Context.fill_input_lines_with_random_numerics,
             "upper": Context.fill_input_lines_with_random_uppercase_letters,
-            "version_numbers": None,
+            "version_numbers": Context.fill_input_lines_with_random_version_numbers,
         },
     ),
     (

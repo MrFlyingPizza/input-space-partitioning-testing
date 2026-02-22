@@ -8,7 +8,7 @@ from context import Context
 from contextinit import pipeline
 
 
-@pytest.mark.parametrize("test_case", read_test_cases("params-output.csv"))
+@pytest.mark.parametrize("test_case", read_test_cases("tests.csv"))
 def test_eval(test_case):
     with (
         TemporaryDirectory() as temp_dir,

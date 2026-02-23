@@ -33,6 +33,12 @@ class Context:
     args: list[str] = field(init=False, default_factory=list)
     random_source: File = field(init=False, default=None)
     random_source_content: str = field(init=False, default="")
+    sort_key: str = field(init=False, default=None)
+    ignore_leading_blanks: bool = field(init=False, default=False)
+    dictionary_order: bool = field(init=False, default=False)
+    ignore_case: bool = field(init=False, default=False)
+    ignore_non_printable: bool = field(init=False, default=False)
+    reverse: bool = field(init=False, default=False)
 
     ascii_upper = string.ascii_uppercase
     ascii_lower = string.ascii_lowercase
@@ -100,6 +106,22 @@ class Context:
             match self.random_source.meta:
                 case Context.File.Meta.READ_PROTECTED:
                     os.chmod(self.random_source.name, 0)
+
+        if self.random_source:
+            self.add_arg("--random-source")
+            self.add_arg(self.random_source.name)
+
+        if self.ignore_leading_blanks:
+            self.add_arg("--ignore-leading-blanks")
+        if self.dictionary_order:
+            self.add_arg("--dictionary-order")
+        if self.ignore_case:
+            self.add_arg("--ignore-case")
+        if self.ignore_non_printable:
+            self.add_arg("--ignore-nonprinting")
+
+        if self.reverse:
+            self.add_arg("--reverse")
 
         return self
 
@@ -242,9 +264,24 @@ class Context:
 
     def add_random_source_file(self, meta=File.Meta.READABLE, *, content: str = ""):
         self.random_source = Context.File("random_source.txt", meta)
-        self.add_arg("--random-source")
-        self.add_arg(self.random_source.name)
         self.random_source_content = content
 
+    def set_ignore_leading_blanks(self):
+        self.ignore_leading_blanks = True
+
+    def set_dictionary_order(self):
+        self.dictionary_order = True
+
+    def set_ignore_case(self):
+        self.ignore_case = True
+
+    def set_ignore_non_printable(self):
+        self.ignore_non_printable = True
+
+    def set_reverse(self):
+        self.reverse = True
+
     def get_expected_output(self):
-        return "".join(sorted(self.input_lines))
+        return "".join(
+            sorted(self.input_lines, key=self.sort_key, reverse=self.reverse)
+        )

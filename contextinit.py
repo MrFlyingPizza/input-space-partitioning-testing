@@ -95,8 +95,10 @@ pipeline: Context.InitPipeline = [
     (
         "input_content_sorting",
         {
-            "ascending": lambda context: context.input_lines.sort(),
-            "descending": lambda context: context.input_lines.sort(reverse=True),
+            "ascending": lambda context: context.input_lines.sort(key=context.sort_key),
+            "descending": lambda context: context.input_lines.sort(
+                key=context.sort_key, reverse=True
+            ),
             "not_applicable": None,
             "unsorted": None,
         },
@@ -106,7 +108,7 @@ pipeline: Context.InitPipeline = [
         {
             "false": None,
             "not_applicable": None,
-            "true": lambda context: context.add_arg("--ignore-leading-blanks"),
+            "true": Context.set_ignore_leading_blanks,
         },
     ),
     (
@@ -114,7 +116,7 @@ pipeline: Context.InitPipeline = [
         {
             "false": None,
             "not_applicable": None,
-            "true": lambda context: context.add_arg("--dictionary-order"),
+            "true": Context.set_dictionary_order,
         },
     ),
     (
@@ -122,7 +124,7 @@ pipeline: Context.InitPipeline = [
         {
             "false": None,
             "not_applicable": None,
-            "true": lambda context: context.add_arg("--ignore-case"),
+            "true": Context.set_ignore_case,
         },
     ),
     (
@@ -130,7 +132,7 @@ pipeline: Context.InitPipeline = [
         {
             "false": None,
             "not_applicable": None,
-            "true": lambda context: context.add_arg("--ignore-nonprinting"),
+            "true": Context.set_ignore_non_printable,
         },
     ),
     (
@@ -153,7 +155,7 @@ pipeline: Context.InitPipeline = [
         {
             "false": None,
             "not_applicable": None,
-            "true": lambda context: context.add_arg("--reverse"),
+            "true": Context.set_reverse,
         },
     ),
     (

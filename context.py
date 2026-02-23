@@ -53,6 +53,14 @@ class Context:
         "November",
         "December",
     ]
+    incompatible_args = [
+        ("--human-numeric-sort", "--dictionary-order"),
+        ("--ignore-nonprinting", "--month-sort"),
+        ("--ignore-nonprinting", "--general-numeric-sort"),
+        ("--ignore-nonprinting", "--human-numeric-sort"),
+        ("--dictionary-order", "--ignore-case", "--general-numeric-sort"),
+        ("--dictionary-order", "--month-sort"),
+    ]
 
     def __post_init__(self, test_case: TestCase, init_pipeline: InitPipeline):
         self.process_pipeline(test_case, init_pipeline)
@@ -104,6 +112,12 @@ class Context:
             handler = handlers[values[name]]
             if handler:
                 handler(self)
+
+    def has_incompatible_args(self):
+        return any(
+            all(incompatible_arg in self.args for incompatible_arg in incompatible_args)
+            for incompatible_args in self.incompatible_args
+        )
 
     def find_file_with_meta(self, meta: File.Meta):
         return next(filter(lambda f: f.meta == meta, self.input_files), None)
@@ -231,3 +245,6 @@ class Context:
         self.add_arg("--random-source")
         self.add_arg(self.random_source.name)
         self.random_source_content = content
+
+    def get_expected_output(self):
+        return "".join(sorted(self.input_lines))

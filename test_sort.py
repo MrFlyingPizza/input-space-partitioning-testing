@@ -21,7 +21,6 @@ def test_eval(test_case):
         assert (context.stdin_file is None) == (stdin_file is None)
 
         args = context.args + context.get_filenames()
-        print(context.encoding)
         result = subprocess.run(
             ["sort", *args],
             stdin=stdin_file,

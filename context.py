@@ -151,7 +151,7 @@ class Context:
         self.stdin_file = Context.File("stdin.txt")
 
     def add_lines_per_input(self, lines_per_input: int = 1):
-        self.input_lines += [None] * (self.get_input_count() * 1)
+        self.input_lines += [None] * (self.get_input_count() * lines_per_input)
 
     def set_all_input_lines_empty(self):
         self.input_lines = [""] * len(self.input_lines)

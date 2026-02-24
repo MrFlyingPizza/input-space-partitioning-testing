@@ -33,7 +33,7 @@ class Context:
     args: list[str] = field(init=False, default_factory=list)
     random_source: File = field(init=False, default=None)
     random_source_content: str = field(init=False, default="")
-    sort_key: str = field(init=False, default=None)
+    sort_key: Callable[[str], int | str | None] = field(init=False, default=None)
     ignore_leading_blanks: bool = field(init=False, default=False)
     dictionary_order: bool = field(init=False, default=False)
     ignore_case: bool = field(init=False, default=False)
@@ -280,6 +280,13 @@ class Context:
 
     def set_reverse(self):
         self.reverse = True
+
+    def set_sort_type_month(self):
+        indexed_months = dict(
+            (value, index) for (index, value) in enumerate(self.months)
+        )
+        self.sort_key = lambda line: indexed_months.get(line, line)
+        self.add_arg("--month-sort")
 
     def get_expected_output(self):
         return "".join(

@@ -140,7 +140,7 @@ pipeline: Context.InitPipeline = [
         {
             "human_numeric": lambda context: context.add_arg("--human-numeric-sort"),
             "lexigraphical": None,
-            "month": lambda context: context.add_arg("--month-sort"),
+            "month": Context.set_sort_type_month,
             "not_applicable": None,
             "numeric": lambda context: context.add_arg("--numeric-sort"),
             "general_numeric": lambda context: context.add_arg(
